@@ -1,0 +1,46 @@
+---
+# tasks file for nfsserver
+- name: create user
+  user:
+    name: "{{ shareuser }}"
+    uid: 2003
+- name: update cache
+  apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+- name: install nfsserver
+  apt:
+     pkg:
+     - nfs-kernel-server
+     - nfs-common
+- name: create directory for jirahome share
+  file:
+    path: "{{ sharehomedirectory }}"
+    state: directory
+    owner: "{{ shareuser }}"
+    group: "{{ shareuser }}"
+    mode: '0700'
+- name: create directory for jirainstall share
+  file:
+    path: "{{ shareinstalldirectory }}"
+    state: directory
+    owner: "{{ shareuser }}"
+    group: "{{ shareuser }}"
+    mode: '0700'
+#- name: add installdirectory to exports
+#  lineinfile:
+#    dest: /etc/exports
+#    line: "{{ shareinstalldirectory }} {{hostvars[item]['ansible_host']}}(rw,sync,no_subtree_check,all_squash,anonuid=2003,anongid=2003)"
+#  with_items: "{{ groups.jiranode }}"
+#  notify: restart nfs
+#- name: add homedirectory to exports
+#  lineinfile:
+#    dest: /etc/exports
+#    line: "{{ sharehomedirectory }} {{hostvars[item]['ansible_host']}}(rw,sync,no_subtree_check,all_squash,anonuid=2003,anongid=2003)"
+#  with_items: "{{ groups.jiranode }}"
+#  notify: restart nfs
+- name: add /etc/exports
+  vars:
+   nodes_to_share: "{{ groups.jiranode  }}"
+  template:
+    src: export.conf.j2
+    dest: /etc/exports
+  notify: restart nfs

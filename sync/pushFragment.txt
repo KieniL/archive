@@ -1,0 +1,7 @@
+Note:Openproject Push
+Section: jira.project.sidebar.settings.navigation
+Key: openproject-Push
+Menu text: Push to Openproject
+Weight 50
+Condition: jiraHelper.project?.key == "TEST1"
+Run code and show flag: /rest/scriptrunner/latest/custom/pushData?project=${project.id}

@@ -1,0 +1,19 @@
+class nginx {
+        package { 'nginx':
+            ensure => installed,
+        }
+
+        service { 'nginx':
+            ensure  => true,
+            enable  => true,
+            require => Package['nginx'],
+        }
+    }
+node 'ldap'{
+ notify { 'ldap': }
+ include nginx
+}
+
+node default {
+  notify { 'this node did not match any of the listed definitions': }
+}

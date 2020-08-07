@@ -1,0 +1,28 @@
+version: '3.5'
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:12-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      PGDATA: /data/postgres
+    volumes:
+       - postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+  confluence:
+    depends_on:
+      - postgres
+    container_name: confluence
+    image: atlassian/confluence-server:6.15.2-alpine
+    volumes:
+      - confluence:/var/atlassian/application-data/confluence 
+    ports:
+      - "8090:8090"
+    restart: unless-stopped
+volumes:
+    postgres:
+    confluence:

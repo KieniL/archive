@@ -1,0 +1,42 @@
+---
+# tasks file for postgres
+- name: update cache
+  apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+- name: install postgres
+  apt:
+    pkg:
+    - python-psycopg2
+    - "postgresql-{{ pgversion }}"
+    - postgresql-contrib
+- name: Change ListenAdress
+  command: "sudo sed -i \"s/#listen_addresses = 'localhost'/listen_addresses='*'/g\" /etc/postgresql/{{pgversion}}/main/postgresql.conf"
+- name: Add Host Authentication First
+  lineinfile:
+    dest: "/etc/postgresql/{{pgversion}}/main/pg_hba.conf"
+    state: present
+    line: "host\tall\t\tall\t\t0.0.0.0/0\t\tmd5"
+- name: Add Host Authentication Second
+  lineinfile:
+    dest: "/etc/postgresql/{{pgversion}}/main/pg_hba.conf"
+    state: present
+    line: "hostssl\tall\t\tall\t\t0.0.0.0/0\t\tmd5"
+- name: Add Host Authentication Third
+  replace:
+      path: /etc/postgresql/{{pgversion}}/main/pg_hba.conf
+      regexp: "^local.*all.*postgres.*peer$"
+      replace: "local\tall\t\tpostgres\t\t\t\ttrust"
+- name: restart postgres
+  service:
+    name: postgresql
+    state: restarted
+- name: add db USER
+  postgresql_user:
+    name: "{{ pguser }}"
+    password: "{{ pgpassword }}"
+    login_user: postgres
+- name: Create a new database
+  postgresql_db:
+    name: "{{ pgdatabase }}"
+    encoding: UTF-8
+    owner: "{{ pguser }}"
+  notify: restart postgres

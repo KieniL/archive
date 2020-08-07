@@ -1,0 +1,73 @@
+---
+# tasks file for efsmount
+- name: Provision a VPC
+  ec2_vpc_net:
+    name: EFS_VPC
+    cidr_block: 10.0.0.0/16
+    tags:
+      project: Demo
+    tenancy: default
+    region: "{{ aws.region }}"
+    dns_hostnames: yes
+    dns_support: yes
+    state: present
+  register: vpc
+
+- name: Provision subnet
+  ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{ vpc.vpc.id }}"    
+    cidr: 10.0.1.0/24
+    map_public: yes
+    tags:
+      project: Demo
+  register: subnet
+
+- name: Provision Internet Gateway
+  ec2_vpc_igw:
+    vpc_id: "{{ vpc.vpc.id }}"
+    state: present
+  register: igw
+
+- name: Provision Route Table
+  ec2_vpc_route_table:
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ aws.region }}"
+    tags:
+      project: BA
+    state: present
+    subnets:
+      - "{{ subnet.subnet.id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ igw.gateway_id }}" 
+  register: routetable
+
+- name: Provision a nfs securitygroup
+  ec2_group:
+    name: NFSSecurityGroup
+    description: Allow nfs access from client securitygroup
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ aws.region }}"
+    state: present
+    tags:
+       project: Demo
+    rules:
+      - proto: tcp
+        from_port: 2049
+        to_port: 2049
+        cidr_ip: "{{ aws.myip }}"
+  register: nfsgroup
+
+- name: Provision EFS
+  efs:
+    state: present
+    name: DemoEFS
+    tags:
+       project: Demo
+    targets:
+        - subnet_id: "{{ subnet.subnet.id  }}"
+          security_groups:
+            - "{{ nfsgroup.group_id }}"
+  register: efs
+

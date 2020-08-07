@@ -1,0 +1,15 @@
+---
+# tasks file for jiracustomfield
+- set_fact:
+    cf_all: "{{ (lookup('file','cf.json') | from_json).data  | list }}"
+- name: Create a JIRA Customfield
+  uri:
+    url: "{{ jira.baseURL }}/rest/api/2/field"
+    user: "{{ jira.username }}"
+    password: "{{ jira.password }}"
+    method: POST
+    body: "{{ item }}"
+    force_basic_auth: yes
+    status_code: 201
+    body_format: json
+  loop: "{{ cf_all }}"

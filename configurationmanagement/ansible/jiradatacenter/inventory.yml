@@ -1,0 +1,61 @@
+nfshost:
+  hosts:
+    nfsserver:
+      ansible_host: ec2-3-121-87-180.eu-central-1.compute.amazonaws.com
+  vars:
+    shareuser: atlassian
+    sharehomedirectory: /atlassianclustershare
+    shareinstalldirectory: /atlassianinstallshare
+    ansible_ssh_private_key_file: dckeypair.pem
+    ansible_user: ubuntu
+#    ansible_password: Kienast
+    ansible_become_user: root
+#    ansible_become_pass: Kienast
+
+dbhost:
+  hosts:
+    dbserver:
+      ansible_host: ec2-18-184-157-223.eu-central-1.compute.amazonaws.com
+  vars:
+    pgversion: 10
+    pguser: jiracluster
+    pgpassword: jiracluster
+    pgdatabase: jiraclusterdb
+    ansible_ssh_private_key_file: dckeypair.pem
+    ansible_user: ubuntu
+#    ansible_password: Kienast
+    ansible_become_user: root
+#    ansible_become_pass: Kienast
+
+jiranode:
+  hosts:
+    node1:
+      ansible_host: ec2-18-196-46-55.eu-central-1.compute.amazonaws.com
+    node2:
+      ansible_host: ec2-18-197-247-101.eu-central-1.compute.amazonaws.com
+    node3:
+      ansible_host: ec2-3-126-121-2.eu-central-1.compute.amazonaws.com
+  vars:
+    jiraversion: 8.7.0
+    shareinstalldirectory: /opt/atlassianinstall-nfs
+    sharehomedirectory: /opt/atlassian-cluster-shared-nfs
+    shareuser: atlassian
+    downloaddirectory: /jirainstall
+    homedirectory: /var/atlassian/application-data/jira
+    ansible_ssh_private_key_file: dckeypair.pem
+    ansible_user: ubuntu
+#    ansible_password: Kienast
+    ansible_become_user: root
+#    ansible_become_pass: Kienast
+
+apachenode:
+  hosts:
+    apacheserver:
+      ansible_host: ec2-35-156-46-176.eu-central-1.compute.amazonaws.com
+  vars:
+    dnsname: jira-nc-dc.at
+    ansible_ssh_private_key_file: dckeypair.pem
+    ansible_user: ubuntu
+#    ansible_password: Kienast
+    ansible_become_user: root
+#    ansible_become_pass: Kienast

@@ -1,0 +1,48 @@
+
+Master:
+	Installation:
+		wget https://apt.puppetlabs.com/puppet-release-bionic.deb
+		sudo dpkg -i puppet-release-bionic.deb
+		sudo apt install puppetmaster
+		
+	Manifeste:
+		Ort der Manifeste ist $puppetdir/manifests ($puppetdir in Docker ist /etc/puppetlabs/code/environments/production/
+		
+		Aufbau:
+			class 'classname' {
+			
+			}
+			
+			node '<nodename>' {
+				include <classname>
+			}
+			
+			node default {
+				notify { 'this node did not match any of the listed definitions': }
+			}
+	
+		
+		Testing:
+			puppet agent -t 
+				Sollte die Notify Benachrichtigung aus default ausgeben
+
+
+Client:
+	Installation:
+		wget https://apt.puppetlabs.com/puppet-release-bionic.deb
+		sudo dpkg -i puppet-release-bionic.deb
+		sudo apt install puppet
+		
+	Konfiguration:
+		
+		/etc/hosts:
+			Es sollte ein DNS Eintrag für die IP Vorhanden sein (ich nutze das host file)
+				IP <hostname>
+				
+		/etc/puppet/puppet.conf:
+			[main]
+			certname = <nodename which matches the nodename in the manifest>
+			server = <hostname of the server (DNS-Entry e.g host file)>
+			
+		puppet agent -t
+			get Configuration from the server

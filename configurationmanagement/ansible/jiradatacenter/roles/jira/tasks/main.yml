@@ -1,0 +1,104 @@
+---
+# tasks file for jira
+- name: create user if not already exists
+  user:
+    name: "{{ shareuser }}"
+    uid: 2003
+- name: download openjdk11
+  get_url:
+    url: https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.5%2B10/OpenJDK11U-jdk_x64_linux_hotspot_11.0.5_10.tar.gz
+    dest: "/home/{{ shareuser }}/openjdk11.tar.gz"
+    mode: '0440'
+- name: unarchive openjdk
+  command: "sudo tar -xf /home/{{ shareuser }}/openjdk11.tar.gz -C /home/{{ shareuser }}"
+- name: set javahome
+  lineinfile:
+    dest: /etc/environment
+    state: present
+    insertbefore: 'PATH*'
+    regexp: '^JAVA_HOME'
+    line: "JAVA_HOME=/home/{{ shareuser }}/jdk-11.0.5+10"
+- name: set javahome to path
+  lineinfile: >
+   dest=/etc/environment
+   state=present
+   backrefs=yes
+   regexp='PATH=(["]*)((?!.*?JAVA_HOME).*?)(["]*)$'
+   line="PATH=\1\2$JAVA_HOME/bin\3"
+- name: create download directory
+  file:
+    path: "{{ downloaddirectory }}"
+    state: directory
+    owner: "{{ shareuser }}"
+    group: "{{ shareuser }}"
+    mode: '0700'
+- name: create home directory
+  file:
+    path: "{{ homedirectory }}"
+    state: directory
+    owner: "{{ shareuser }}"
+    group: "{{ shareuser }}"
+    mode: '0700'
+- name: set jirahome
+  lineinfile:
+    dest: /etc/environment
+    state: present
+    insertbefore: 'PATH*'
+    regexp: '^JIRA_HOME'
+    line: "JIRA_HOME={{ homedirectory }}"
+- name: reload environment vars
+  shell: . /etc/environment
+- name: download jira
+  get_url:
+    url: "https://www.atlassian.com/software/jira/downloads/binary/atlassian-jira-software-{{ jiraversion }}.tar.gz"
+    dest: "{{ downloaddirectory }}/jira-{{ jiraversion }}.tar.gz"
+    mode: '0440'
+  when: inventory_hostname == "node1"
+- name: unarchive jira
+  command: "sudo tar -xzf /{{ downloaddirectory }}/jira-{{ jiraversion }}.tar.gz -C {{ downloaddirectory }}"
+  when: inventory_hostname == "node1"
+- name: Copy jira home from node1 to sharedhome
+  copy:
+    src: "{{ homedirectory }}/"
+    remote_src: yes
+    dest: "{{ sharehomedirectory }}/"
+    owner: "{{ shareuser }}"
+    group: "{{ shareuser }}"
+    mode: '0700'
+  when: inventory_hostname == "node1"
+- name: copy sharedhome to jirahome on all except node1
+  copy:
+    dest: "{{ homedirectory }}"
+    remote_src: yes
+    src: "{{ sharehomedirectory }}/"
+    owner: "{{ shareuser }}"
+    group: "{{ shareuser }}"
+    mode: '0700'
+  when: inventory_hostname != "node1"
+- name: copy installdirec from node 1 to share
+  copy:
+    src: "{{ downloaddirectory }}"
+    remote_src: yes
+    dest: "{{ shareinstalldirectory }}"
+    owner: "{{ shareuser }}"
+    group: "{{ shareuser }}"
+    mode: '0700'
+  when: inventory_hostname == "node1"
+- name: copy installdirectory from share to all nodes ecept node1
+  copy:
+    dest: "{{ downloaddirectory }}"
+    remote_src: yes
+    src: "{{ shareinstalldirectory }}{{ downloaddirectory }}/"
+    owner: "{{ shareuser }}"
+    group: "{{ shareuser }}"
+    mode: '0700'
+  when: inventory_hostname != "node1"
+- name: Create cluster.properties file
+  template:
+    src: cluster.properties.j2
+    dest: "{{ homedirectory }}/cluster.properties"
+- name: stop jira if started
+  ignore_errors: true
+  shell: "sudo {{ downloaddirectory }}/atlassian-jira-software-{{ jiraversion }}-standalone/bin/stop-jira.sh"
+- name: start jira
+  shell: "sudo {{ downloaddirectory }}/atlassian-jira-software-{{ jiraversion }}-standalone/bin/start-jira.sh"

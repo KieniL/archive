@@ -1,0 +1,7 @@
+Note:Openproject Open
+Section: jira.project.sidebar.settings.navigation
+Key: openproject.openproject
+Menu text: Open Openproject
+Weight 1
+Condition: jiraHelper.project?.key == "TEST1"
+Navigate to Link: http://openproject.at/projects/demo-project/

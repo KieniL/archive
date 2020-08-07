@@ -1,0 +1,59 @@
+---
+- hosts: nfsserver
+  gather_facts: no
+ # remote_user: lukas
+  become: yes
+ # become_method: sudo
+  tasks:
+    - name: update cache
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+    - name: install nfsserver
+      apt:
+        pkg:
+        - nfs-kernel-server
+        - nfs-common
+    - name: create directory
+      file:
+        path: /share
+        state: directory
+        owner: nobody
+        group: nogroup
+        mode: '0755'
+    - name: add directory to exports
+      #blockinfile:
+      #  path: /etc/exports
+      #  block: |
+      #   /share  {{ item }}(rw,sync,no_subtree_check,no_root_squash)
+      #  marker: "#Client sharing {{ item }}"
+      lineinfile:
+        dest: /etc/exports
+        line: "/share {{ item }}(rw,sync,no_subtree_check,no_root_squash)"
+      with_items:
+        - 192.168.56.106
+        - 192.168.56.108
+    - name: restart nfsserver
+      service:
+        name: nfs-kernel-server
+        state:  restarted
+   
+- hosts: nfsclient:secondclient
+  gather_facts: no
+  #remote_user: lukas
+  become: yes
+  #become_method: sudo
+  tasks:
+    - name: update cache
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+    - name: install nfs-common
+      apt:
+        name: nfs-common
+        state: present    
+    - name: create mountdirectory
+      file:
+        path: /mnt/share
+        state: directory
+        mode: '0755'
+
+    - name: mount directory
+      command: "sudo mount 192.168.56.103:/share /mnt/share"
+

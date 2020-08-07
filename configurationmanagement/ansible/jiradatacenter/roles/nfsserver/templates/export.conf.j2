@@ -1,0 +1,4 @@
+{% for host in nodes_to_share %}
+{{shareinstalldirectory}} {{hostvars[host]['ansible_host']}}(rw,sync,no_subtree_check,all_squash,anonuid=2003,anongid=2003)
+{{sharehomedirectory}} {{hostvars[host]['ansible_host']}}(rw,sync,no_subtree_check,all_squash,anonuid=2003,anongid=2003)
+{% endfor %}

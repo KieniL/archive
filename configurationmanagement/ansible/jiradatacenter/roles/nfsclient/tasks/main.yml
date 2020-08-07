@@ -1,0 +1,46 @@
+---
+# tasks file for nfsclient
+- name: create user
+  user:
+    name: "{{ shareuser }}"
+    uid: 2003
+- name: update cache
+  apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+- name: install nfsclient
+  apt:
+    name: nfs-common
+    state: present
+- name: create installmountdirectory
+  file:
+    path: "{{ shareinstalldirectory }}"
+    state: directory
+    owner: "{{ shareuser }}"
+    group: "{{ shareuser }}"
+    mode: '0700'
+- name: mount install directory
+  mount:
+     fstype: nfs
+     opts: defaults
+     dump: 0
+     passno: 0
+     state: mounted
+     src: "{{hostvars[item]['ansible_host']}}:{{hostvars[item]['shareinstalldirectory']}}"
+     path: "{{ shareinstalldirectory }}"
+  with_items: "{{ groups.nfshost }}"
+- name: create mountdirectory
+  file:
+    path: "{{ sharehomedirectory }}"
+    state: directory
+    owner: "{{ shareuser }}"
+    group: "{{ shareuser }}"
+    mode: '0700'
+- name: mount home directory
+  mount:
+     fstype: nfs
+     opts: defaults
+     dump: 0
+     passno: 0
+     state: mounted
+     src: "{{hostvars[item]['ansible_host']}}:{{hostvars[item]['sharehomedirectory']}}"
+     path: "{{ sharehomedirectory }}"
+  with_items: "{{ groups.nfshost }}"

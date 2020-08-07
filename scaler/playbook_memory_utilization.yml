@@ -1,0 +1,6 @@
+- hosts: localhost
+  gather_facts: true
+  tasks:
+    - debug:
+        msg: "Memory is too high"
+      when: (ansible_memory_mb.real.used / ansible_memory_mb.real.total) * 100 > 10

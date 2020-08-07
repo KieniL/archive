@@ -1,0 +1,38 @@
+---
+# tasks file for apache
+- name: update cache
+  apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+- name: install apache2
+  apt:
+    name: apache2
+    state: present
+- name: install necessary apache2 moduless
+  apache2_module:
+    state: present
+    name: "{{item}}"
+  with_items:
+    - headers
+    - proxy_balancer
+    - proxy_http
+    - proxy
+    - lbmethod_byrequests
+    - slotmem_shm
+- name: delete default site
+  file:
+    path: "/etc/apache2/sites-enabled/000*"
+    state: absent
+- name: create loadbalancer config
+  vars:
+    nodes_to_balance: "{{ groups.jiranode }}"
+  template:
+    src:  jiracluster.conf.j2
+    dest: "/etc/apache2/sites-available/001-{{ dnsname  }}.conf"
+- name: change default site config
+  lineinfile:
+    dest: /etc/apache2/sites-available/000-default.conf
+    state: present
+    regexp: '#ServerName www.example.com'
+    line: 'ServerName www.example.com'
+- name: enable a2ensite
+  command: "sudo a2ensite 001-{{ dnsname  }}.conf"
+  notify: reload apache

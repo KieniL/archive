@@ -1,0 +1,9 @@
+---
+# vars file for awswebserver
+aws:
+  # keypairname: testingkeypair
+  # securitygroup: test
+   instancetype: t2.micro
+   image: ami-0b418580298265d5c
+   region: eu-central-1
+   myip: 62.178.238.153/32

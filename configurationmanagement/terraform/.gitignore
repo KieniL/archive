@@ -1,0 +1,4 @@
+terraform_0.12.23_linux_amd64.zip
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup

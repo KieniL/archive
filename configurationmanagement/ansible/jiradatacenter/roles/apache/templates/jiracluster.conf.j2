@@ -1,0 +1,10 @@
+<VirtualHost *:80>
+ServerName {{ dnsname }}
+Header add Set-Cookie  "ROUTEID=.%{BALANCER_WORKER_ROUTE}e; path=/"  env=BALANCER_ROUTE_CHANGED
+<Proxy balancer://{{ dnsname }}>
+{% for host in nodes_to_balance %}
+  BalancerMember http://{{hostvars[host]['ansible_host']}}:8080 route={{loop.index}}
+{% endfor %}
+</Proxy>
+ProxyPass / balancer://{{ dnsname }}/  stickysession=ROUTEID
+</VirtualHost>

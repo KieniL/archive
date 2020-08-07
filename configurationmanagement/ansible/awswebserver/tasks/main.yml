@@ -1,0 +1,126 @@
+---
+# tasks file for awswebserver
+- name: Provision a VPC
+  ec2_vpc_net:
+    name: Ansible_VPC
+    cidr_block: 10.0.0.0/16
+    tags:
+      project: BA
+    tenancy: default
+    region: "{{ aws.region }}"
+    dns_hostnames: yes
+    dns_support: yes
+    state: present
+  register: vpc
+
+- name: Provision subnet
+  ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{ vpc.vpc.id }}"    
+    cidr: 10.0.1.0/24
+    map_public: yes
+    tags:
+      project: BA
+  register: subnet
+
+- name: Provision Internet Gateway
+  ec2_vpc_igw:
+    vpc_id: "{{ vpc.vpc.id }}"
+    state: present
+  register: igw
+   
+- name: Provision Route Table
+  ec2_vpc_route_table:
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ aws.region }}"
+    tags:
+      project: BA
+    state: present
+    subnets:
+      - "{{ subnet.subnet.id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ igw.gateway_id }}" 
+  register: routetable
+
+- name: Provision a securitygroup
+  ec2_group:
+    name: WebserverSecurityGroup
+    description: Allow http to client host
+    vpc_id: "{{ vpc.vpc.id }}"
+    region: "{{ aws.region }}"
+    state: present
+    tags:
+       project: BA
+    rules:
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: "{{ aws.myip }}"
+  register: group
+
+- name: Provision a role
+  iam_role:
+    name: webserverrole
+    create_instance_profile: yes
+    state: present
+    assume_role_policy_document: "{{ lookup('file','assume_policy.json') }}"
+    managed_policy:
+      - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+  register: role
+
+- name: Assign policy to role
+  iam_policy:
+    iam_name: "{{ role.iam_role.role_name }}"
+    iam_type: role
+    policy_name: "LogPolicy"
+    state: present
+    policy_json:
+      Version: '2012-10-17'
+      Statement:
+        - Action: ['logs:CreateLogStream', 'logs:DescribeLogStreams', 'logs:PutLogEvents']
+          Effect: Allow
+          Resource: 'arn:aws:logs:eu-central-1:680785598240:log-group:ssmlog:*'
+        - Action: ['logs:CreateLogGroup', 'logs:DescribeLogGroups']
+          Effect: Allow
+          Resource: 'arn:aws:logs:eu-central-1:680785598240:log-group:*'
+
+- name: Provision S3 Bucket
+  s3_bucket:
+    name: ansiblebucket-kienast
+    encryption: AES256
+    policy:
+      Version: '2012-10-17'
+      Statement:
+        - Action: ['s3:ListBucket']
+          Effect: Allow
+          Principal:
+            AWS:
+              'arn:aws:iam::680785598240:role/webserverrole'
+          Resource: 'arn:aws:s3:::ansiblebucket-kienast'
+        - Action: ['s3:GetObject', 's3:PutObject']
+          Effect: Allow
+          Principal:
+            AWS:
+              'arn:aws:iam::680785598240:role/webserverrole'
+          Resource: 'arn:aws:s3:::ansiblebucket-kienast/*'
+    state: present
+    tags:
+       project: BA
+
+- name: Provision a Server
+  ec2_instance:
+     security_groups:
+       - "{{ group.group_name }}"
+     instance_type: "{{ aws.instancetype  }}"
+     image_id: "{{ aws.image  }}"
+     instance_role: "{{ role.iam_role.role_name }}"
+     region: "{{ aws.region  }}"
+     vpc_subnet_id: "{{ subnet.subnet.id }}"
+     wait: true
+     wait_timeout: 60
+     state: present
+     user_data: "{{ lookup('file', 'user_data.sh') }}"
+     tags:
+        project: BA
+  register: ec2 

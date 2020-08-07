@@ -1,0 +1,22 @@
+---
+- hosts: nfshost
+  gather_facts: no
+  become: yes
+  roles:
+    - { role: roles/nfsserver }
+- hosts: dbhost
+  gather_facts: no
+  become: yes
+  roles:
+    - { role: roles/postgres }
+- hosts: apachenode
+  gather_facts: no
+  become: yes
+  roles:
+    - { role: roles/apache }
+- hosts: jiranode
+  gather_facts: no
+  become: yes
+  roles:
+    - { role: roles/nfsclient }
+    - { role: roles/jira }

@@ -1,0 +1,7 @@
+Note:openproject pull
+Section: jira.project.sidebar.settings.navigation
+Key: openproject.pull
+Menu text: Pull from Openproject
+Weight 30
+Condition: jiraHelper.project?.key == "TEST1"
+Run code and show flag: /rest/scriptrunner/latest/custom/pullData

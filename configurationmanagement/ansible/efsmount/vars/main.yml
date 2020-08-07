@@ -1,0 +1,5 @@
+---
+# vars file for efsmount
+aws:
+   region: eu-central-1
+   myip: 62.178.238.153/32
